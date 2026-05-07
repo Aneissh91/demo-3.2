@@ -16,7 +16,7 @@ resource "aws_s3_bucket" "s3_tf" {
   #checkov:skip=CKV_AWS_144
   #checkov:skip=CKV_AWS_21
   #checkov:skip=CKV_AWS_145
-  bucket_prefix = "nas-s3buckets"
+  bucket_prefix = "aneesh-s3buckets"
 }
 
 terraform {
@@ -56,7 +56,7 @@ resource "aws_s3_bucket" "logging" {
   #checkov:skip=CKV_AWS_21
   #checkov:skip=CKV_AWS_145
   #checkov:skip=CKV2_AWS_61
-  bucket = "luqman-ce12-32-logging-bucket"
+  bucket = "aneesh-ce12-32-logging-bucket"
 }
 
 data "aws_iam_policy_document" "logging_bucket_policy" {
