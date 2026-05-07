@@ -13,18 +13,19 @@ terraform {
   }
 
   backend "s3" {
-    bucket = "sctp-ce12-tfstate-bucket" # Change this
-    key    = "state.tfstate"            # Change this
+    bucket = "sctp-ce12-tfstate-bucket" # must exist in AWS
+    key    = "state.tfstate"
     region = "ap-southeast-1"
   }
 }
 
+# =========================================
+# Main bucket resource
 resource "aws_s3_bucket" "s3_tf" {
-  bucket_prefix = "terraform-aneesh-" # Set your bucket name here
+  bucket_prefix = "terraform-aneesh-"
 }
 
-# =========================================
-# checkov CL2_AWS_6: s3 public access block
+# Public access block
 resource "aws_s3_bucket_public_access_block" "s3_tf_block" {
   bucket = aws_s3_bucket.s3_tf.id
 
@@ -34,7 +35,7 @@ resource "aws_s3_bucket_public_access_block" "s3_tf_block" {
   restrict_public_buckets = true
 }
 
-# checkov CK_AWS_21: enable versioning
+# Versioning
 resource "aws_s3_bucket_versioning" "versioning" {
   bucket = aws_s3_bucket.s3_tf.id
 
@@ -43,18 +44,19 @@ resource "aws_s3_bucket_versioning" "versioning" {
   }
 }
 
-# checkov CK_AWS_145: enable encryption (sse-s3 minimal)
+# Encryption with KMS
 resource "aws_s3_bucket_server_side_encryption_configuration" "encryption" {
   bucket = aws_s3_bucket.s3_tf.id
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = "alias/my-key" # replace with your KMS key alias or ARN
     }
   }
 }
 
-# checkov CK2_AWS_61: lifecycle configuration required
+# Lifecycle configuration (cleanup + abort incomplete uploads)
 resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
   bucket = aws_s3_bucket.s3_tf.id
 
@@ -67,5 +69,20 @@ resource "aws_s3_bucket_lifecycle_configuration" "lifecycle" {
     expiration {
       days = 90
     }
+
+    abort_incomplete_multipart_upload {
+      days_after_initiation = 7
+    }
   }
+}
+
+# Access logging (requires a separate log bucket)
+resource "aws_s3_bucket" "log_bucket" {
+  bucket_prefix = "terraform-aneesh-logs-"
+}
+
+resource "aws_s3_bucket_logging" "logging" {
+  bucket        = aws_s3_bucket.s3_tf.id
+  target_bucket = aws_s3_bucket.log_bucket.id
+  target_prefix = "logs/"
 }
